@@ -1,0 +1,31 @@
+{
+  "name": "blackholesim",
+  "version": "1.0.0",
+  "description": "<img src=\"assets/icon.svg\" width=\"64\" height=\"64\" alt=\"\">",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raustefan/blackholesim.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/raustefan/blackholesim/issues"
+  },
+  "homepage": "https://github.com/raustefan/blackholesim#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@webgpu/types": "^0.1.74",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "webgpu": "^0.6.2"
+  }
+}

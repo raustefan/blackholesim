@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Kerr Observatory · a relativistic black hole instrument</title>
+    <meta name="description" content="Explore the spacetime of a rotating black hole: exact Kerr geodesics traced per pixel in WebGPU, a Novikov–Thorne accretion disk, and 120,000 real stars." />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@400;500&family=VT323&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <svg class="crest" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="1" />
+        <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="1 2" />
+        <ellipse cx="32" cy="32" rx="22" ry="6" fill="none" stroke="currentColor" stroke-width="1.4" />
+        <path d="M10 32 A22 9 0 0 1 54 32" fill="none" stroke="currentColor" stroke-width="0.8" />
+        <circle cx="32" cy="32" r="8" fill="currentColor" />
+      </svg>
+      <div class="title">
+        <h1>The Kerr Observatory</h1>
+        <p>An instrument for the exploration of rotating spacetime</p>
+      </div>
+      <div class="imprint">
+        <span>Plate <b id="plate-no">I</b></span>
+        <span>Kerr–Schild · Novikov–Thorne · HYG</span>
+      </div>
+    </header>
+
+    <main class="bench">
+      <section class="plate" aria-label="Simulated view">
+        <div class="plate-frame">
+          <canvas id="view" tabindex="0" aria-label="Ray-traced view of the black hole. Drag to look around, scroll to zoom."></canvas>
+          <i class="reg tl"></i><i class="reg tr"></i><i class="reg bl"></i><i class="reg br"></i>
+          <div class="overlay" id="overlay" role="status">
+            <div class="overlay-card">
+              <p class="overlay-title" id="overlay-title">Developing plate…</p>
+              <p class="overlay-body" id="overlay-body">Loading 119,625 catalogue stars and the Milky Way.</p>
+              <button id="overlay-btn" hidden>Return to station</button>
+            </div>
+          </div>
+          <div class="reticle" aria-hidden="true"></div>
+          <p class="hint">drag · look &nbsp;|&nbsp; wheel · zoom &nbsp;|&nbsp; W S · radius / thrust &nbsp;|&nbsp; A D R F · thrust &nbsp;|&nbsp; space · pause</p>
+        </div>
+        <p class="caption" id="caption"></p>
+      </section>
+
+      <aside class="panel" aria-label="Instrument controls">
+        <fieldset>
+          <legend><span class="num">I.</span> The Black Hole</legend>
+          <label class="ctl">
+            <span>Spin <em>a/M</em></span>
+            <input type="range" id="spin" min="-0.998" max="0.998" step="0.001" value="0.9" />
+            <output for="spin" id="spin-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Mass</span>
+            <input type="range" id="mass" min="0.5" max="10.5" step="0.01" value="9.813" />
+            <output for="mass" id="mass-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Accretion <em>Ṁ/Ṁ<sub>Edd</sub></em></span>
+            <input type="range" id="mdot" min="-7" max="0" step="0.01" value="-4" />
+            <output for="mdot" id="mdot-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Disk edge</span>
+            <input type="range" id="rout" min="8" max="80" step="0.5" value="30" />
+            <output for="rout" id="rout-out"></output>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="num">II.</span> The Observer</legend>
+          <div class="selector" role="radiogroup" aria-label="Observer">
+            <label><input type="radio" name="mode" value="static" checked /><span>Static</span></label>
+            <label><input type="radio" name="mode" value="zamo" /><span>ZAMO</span></label>
+            <label><input type="radio" name="mode" value="orbit" /><span>Orbit</span></label>
+            <label><input type="radio" name="mode" value="free" /><span>Free fall</span></label>
+          </div>
+          <p class="note" id="mode-note"></p>
+          <label class="ctl">
+            <span>Radius <em>r/M</em></span>
+            <input type="range" id="radius" min="0" max="3" step="0.001" value="1.740" />
+            <output for="radius" id="radius-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Polar angle <em>θ</em></span>
+            <input type="range" id="theta" min="1" max="179" step="0.5" value="81" />
+            <output for="theta" id="theta-out"></output>
+          </label>
+          <div class="row">
+            <div class="selector small" role="radiogroup" aria-label="Orbit sense">
+              <label><input type="radio" name="sense" value="pro" checked /><span>Prograde</span></label>
+              <label><input type="radio" name="sense" value="retro" /><span>Retrograde</span></label>
+            </div>
+            <div class="selector small" role="radiogroup" aria-label="Camera frame">
+              <label title="The camera keeps pointing at the hole"><input type="radio" name="frame" value="track" checked /><span>Track</span></label>
+              <label title="Fermi–Walker transported: a gyroscope-stabilised camera (free fall)"><input type="radio" name="frame" value="gyro" /><span>Gyro</span></label>
+            </div>
+          </div>
+          <label class="ctl">
+            <span>Rocket thrust</span>
+            <input type="range" id="thrust" min="-4" max="0" step="0.01" value="-2" />
+            <output for="thrust" id="thrust-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Time warp</span>
+            <input type="range" id="warp" min="-1" max="3" step="0.01" value="0.7" />
+            <output for="warp" id="warp-out"></output>
+          </label>
+          <div class="buttons">
+            <button id="release" title="Cut the engines: follow a geodesic from the current state">Release</button>
+            <button id="station" title="Return to a stationary observer">Station</button>
+            <button id="pause" aria-pressed="false">Pause</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="num">III.</span> Optics</legend>
+          <label class="ctl">
+            <span>Field of view</span>
+            <input type="range" id="fov" min="5" max="150" step="0.5" value="42" />
+            <output for="fov" id="fov-out"></output>
+          </label>
+          <label class="ctl">
+            <span>Exposure</span>
+            <input type="range" id="ev" min="-6" max="6" step="0.1" value="0" />
+            <output for="ev" id="ev-out"></output>
+          </label>
+          <label class="ctl" title="Real starlight is ~10^12 times fainter than the disk; this boosts the sky only.">
+            <span>Sky gain <em>(non-physical)</em></span>
+            <input type="range" id="skygain" min="0" max="50" step="0.5" value="36" />
+            <output for="skygain" id="skygain-out"></output>
+          </label>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="t-lensing" checked /><i></i>Light bending</label>
+            <label class="toggle"><input type="checkbox" id="t-redshift" checked /><i></i>Frequency shifts</label>
+            <label class="toggle"><input type="checkbox" id="t-doppler" checked /><i></i>Doppler beaming</label>
+            <label class="toggle"><input type="checkbox" id="t-disk" checked /><i></i>Accretion disk</label>
+            <label class="toggle"><input type="checkbox" id="t-stars" checked /><i></i>Catalogue stars</label>
+            <label class="toggle" title="Artistic: modulates the Novikov–Thorne flux with advected noise"><input type="checkbox" id="t-turb" checked /><i></i>Turbulence <em>(artistic)</em></label>
+            <label class="toggle"><input type="checkbox" id="t-luminet" /><i></i>Luminet 1979 plate</label>
+          </div>
+          <div class="selector small" role="radiogroup" aria-label="Integrator tolerance">
+            <label><input type="radio" name="quality" value="3e-5" /><span>Draft</span></label>
+            <label><input type="radio" name="quality" value="1e-5" checked /><span>Fine</span></label>
+            <label><input type="radio" name="quality" value="2e-6" /><span>Exquisite</span></label>
+          </div>
+        </fieldset>
+      </aside>
+
+      <section class="console">
+        <div class="phosphor" aria-label="Instrument readouts">
+          <div class="cell"><span>Radius</span><b id="o-r">—</b><small id="o-rphys"></small></div>
+          <div class="cell"><span>Polar angle</span><b id="o-theta">—</b><small id="o-region"></small></div>
+          <div class="cell"><span>Proper time τ</span><b id="o-tau">—</b><small id="o-t"></small></div>
+          <div class="cell"><span>dτ / dt</span><b id="o-dtdt">—</b><small>clock rate vs. far away</small></div>
+          <div class="cell"><span>Speed vs. ZAMO</span><b id="o-v">—</b><small id="o-gamma"></small></div>
+          <div class="cell"><span>Proper accel.</span><b id="o-acc">—</b><small id="o-accnote"></small></div>
+          <div class="cell"><span>Tidal stretch</span><b id="o-tidal">—</b><small>across a 2 m body</small></div>
+          <div class="cell"><span>Starlight</span><b id="o-gahead">—</b><small id="o-gbehind"></small></div>
+          <div class="cell"><span>Disk peak</span><b id="o-tpeak">—</b><small id="o-lum"></small></div>
+          <div class="cell"><span>Horizons</span><b id="o-rplus">—</b><small id="o-risco"></small></div>
+          <div class="cell"><span>Render</span><b id="o-fps">—</b><small id="o-scale"></small></div>
+        </div>
+        <figure class="chart">
+          <canvas id="chart" aria-label="Orbit chart"></canvas>
+          <figcaption>
+            <span><i class="k k-h"></i>horizon r<sub>±</sub></span>
+            <span><i class="k k-e"></i>ergosphere</span>
+            <span><i class="k k-p"></i>photon orbits</span>
+            <span><i class="k k-i"></i>ISCO</span>
+            <span><i class="k k-d"></i>disk</span>
+            <span class="log">log radial scale</span>
+          </figcaption>
+        </figure>
+      </section>
+    </main>
+
+    <footer class="notes">
+      <details>
+        <summary>Notes on the method, and its honest limits</summary>
+        <div class="cols">
+          <section>
+            <h3>Spacetime</h3>
+            <p>The exact Kerr metric in ingoing Kerr–Schild coordinates, which stay regular across both horizons, so you can fall through r<sub>+</sub>. For every pixel the null geodesic is integrated backwards from the camera with an adaptive Dormand–Prince 5(4) scheme on the Hamiltonian flow. A double-precision twin of the shader checks the GPU image to 0.01 px in the test suite. It also reproduces the 3√3&nbsp;M shadow, Bardeen's Kerr shadow edges, the Carter-constant capture criterion and the weak-field deflection series.</p>
+          </section>
+          <section>
+            <h3>Light</h3>
+            <p>A thin Novikov–Thorne disk from the ISCO outward. Its temperature comes from the Page–Thorne flux for the chosen mass and Eddington ratio. Blackbody light shifted by g is again a blackbody, at temperature gT, so colours are exact: Planck spectra are integrated against the CIE 1931 observer in absolute photometric units. Stars are the 119,625 entries of the HYG catalogue, drawn as true point sources whose brightness follows the lensing magnification. The diffuse Milky Way comes from NASA's Deep Star Maps, with the stars removed.</p>
+          </section>
+          <section>
+            <h3>The observer</h3>
+            <p>Your camera is an orthonormal tetrad on a real timelike worldline: static, zero-angular-momentum, on a circular geodesic, or in free fall with optional rocket thrust. In <em>Gyro</em> mode the frame is Fermi–Walker transported, so you see geodetic and Lense–Thirring precession. The readouts give the full tidal tensor from the Riemann curvature, the proper acceleration needed to hold position, and the frequency shift of starlight.</p>
+          </section>
+          <section>
+            <h3>Limits</h3>
+            <p>The GPU works in 32-bit floats. The thin disk is optically thick with no color correction, limb darkening or returning radiation. Sky colours are shifted along the Planckian locus of each pixel's chromaticity. The turbulence texture and bloom are aesthetic. The sky gain is non-physical: the real Milky Way is about 10<sup>12</sup> times fainter than the disk. Free fall stops at the inner (Cauchy) horizon, beyond which the Kerr solution is not predictive.</p>
+          </section>
+        </div>
+        <p class="credits">Star map: NASA/Goddard Scientific Visualization Studio, Deep Star Maps 2020 · Catalogue: HYG v4.1 (D. Nash) · Colour matching: CIE 1931 · After Bardeen (1973), Page &amp; Thorne (1974), Luminet (1979).</p>
+      </details>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
